@@ -26,3 +26,14 @@ class SubmissionQueue:
             return None
         _, payload = item
         return int(json.loads(payload)["submission_id"])
+
+    def allow_submission(self, user_id: int, limit: int = 20, window_seconds: int = 60) -> bool:
+        """Small Redis-backed abuse guard for submission bursts."""
+        key = f"codearena:rate:submissions:{user_id}"
+        try:
+            count = self.client.incr(key)
+            if count == 1:
+                self.client.expire(key, window_seconds)
+            return count <= limit
+        except RedisError as error:
+            raise RuntimeError("Submission rate limiter is unavailable") from error
