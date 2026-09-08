@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -66,3 +66,39 @@ class TestCase(Base):
     input_data: Mapped[str] = mapped_column(Text)
     expected_output: Mapped[str] = mapped_column(Text)
     is_hidden: Mapped[bool] = mapped_column(default=True)
+
+
+class Contest(Base):
+    __tablename__ = "contests"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str] = mapped_column(Text, default="")
+    starts_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+
+class ContestProblem(Base):
+    __tablename__ = "contest_problems"
+    __table_args__ = (UniqueConstraint("contest_id", "problem_id", name="uq_problem_per_contest"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contest_id: Mapped[int] = mapped_column(ForeignKey("contests.id"), index=True)
+    problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
+    points: Mapped[int] = mapped_column(Integer, default=100)
+
+
+class ContestRegistration(Base):
+    __tablename__ = "contest_registrations"
+    __table_args__ = (UniqueConstraint("contest_id", "user_id", name="uq_user_registration_per_contest"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contest_id: Mapped[int] = mapped_column(ForeignKey("contests.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    registered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ContestSubmission(Base):
+    __tablename__ = "contest_submissions"
+    __table_args__ = (UniqueConstraint("contest_id", "submission_id", name="uq_submission_per_contest"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contest_id: Mapped[int] = mapped_column(ForeignKey("contests.id"), index=True)
+    submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), index=True)

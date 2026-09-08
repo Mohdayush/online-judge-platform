@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
@@ -35,6 +35,7 @@ class ProblemResponse(ProblemCreate):
 
 class SubmissionCreate(BaseModel):
     problem_id: int
+    contest_id: int | None = None
     language: str = Field(pattern=r"^(python|cpp)$")
     source_code: str = Field(min_length=1, max_length=50000)
 
@@ -63,3 +64,42 @@ class SubmissionResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+
+class ContestProblemCreate(BaseModel):
+    problem_id: int
+    points: int = Field(default=100, ge=1, le=10000)
+
+
+class ContestCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(default="", max_length=5000)
+    starts_at: datetime
+    ends_at: datetime
+    problems: list[ContestProblemCreate] = Field(min_length=1)
+
+    @field_validator("ends_at")
+    @classmethod
+    def end_after_start(cls, value: datetime, info):
+        start = info.data.get("starts_at")
+        if start and value <= start:
+            raise ValueError("ends_at must be after starts_at")
+        return value
+
+
+class ContestResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    starts_at: datetime
+    ends_at: datetime
+    class Config:
+        from_attributes = True
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    username: str
+    score: int
+    solved: int
+    penalty_seconds: int
