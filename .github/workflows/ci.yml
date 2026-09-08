@@ -24,3 +24,7 @@ jobs:
         run: node --check web/app.js
       - name: Check whitespace
         run: git diff --check
+      - name: Build API image
+        run: docker build -t codearena-api:ci .
+      - name: Build worker image
+        run: docker build -t codearena-worker:ci -f Dockerfile.worker .
