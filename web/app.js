@@ -1,93 +1,20 @@
-const API = "/api/v1";
-const state = { token: localStorage.getItem("codearena_token"), problems: [], selectedProblem: null, isRegistering: false };
-const byId = (id) => document.getElementById(id);
-const request = async (path, options = {}) => {
-  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  if (state.token) headers.Authorization = `Bearer ${state.token}`;
-  const response = await fetch(`${API}${path}`, { ...options, headers });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.detail || "Request failed");
-  return body;
-};
-const setStatus = (value) => {
-  const tag = byId("submission-state"); tag.textContent = value.replaceAll("_", " ");
-  tag.className = `status-pill ${value === "ACCEPTED" ? "accepted" : /ERROR|WRONG|TIME/.test(value) ? "error" : ""}`;
-};
-const card = (tag, className) => { const element = document.createElement(tag); element.className = className; return element; };
-
-function renderProblems(items) {
-  const list = byId("problem-list"); list.replaceChildren();
-  if (!items.length) { list.textContent = "No matching problems."; return; }
-  items.forEach((problem) => {
-    const item = card("article", "problem-card"); const difficulty = card("span", `difficulty ${problem.difficulty.toLowerCase()}`); difficulty.textContent = problem.difficulty;
-    const title = document.createElement("h3"); title.textContent = problem.title; const meta = card("p", "card-meta"); meta.textContent = `${problem.time_limit_ms} ms · ${problem.memory_limit_mb} MB`;
-    item.append(difficulty, title, meta); item.addEventListener("click", () => selectProblem(problem)); list.append(item);
-  });
-}
-function selectProblem(problem) {
-  state.selectedProblem = problem; byId("workspace-title").textContent = problem.title;
-  const difficulty = byId("problem-difficulty"); difficulty.textContent = problem.difficulty; difficulty.className = `difficulty ${problem.difficulty.toLowerCase()}`;
-  byId("problem-description").textContent = problem.description; byId("time-limit").textContent = `${problem.time_limit_ms} ms`; byId("memory-limit").textContent = `${problem.memory_limit_mb} MB`;
-  byId("selected-problem-label").textContent = problem.title; byId("submit-button").disabled = false;
-  byId("source-code").value = byId("language").value === "cpp" ? "#include <iostream>\nusing namespace std;\n\nint main() {\n  return 0;\n}" : "# Write your solution\n";
-  location.hash = "workspace";
-}
-async function loadProblems() { try { state.problems = await request("/problems"); renderProblems(state.problems); } catch (error) { byId("problem-list").textContent = error.message; } }
-
-function renderContests(contests) {
-  const list = byId("contest-list"); list.replaceChildren();
-  if (!contests.length) { list.textContent = "No contests have been scheduled yet."; return; }
-  contests.forEach((contest) => {
-    const item = card("article", "contest-card"); const title = document.createElement("h3"); title.textContent = contest.title;
-    const description = card("p", "muted"); description.textContent = contest.description || "Timed programming contest";
-    const date = card("p", "card-meta"); date.textContent = `${new Date(contest.starts_at).toLocaleString()} → ${new Date(contest.ends_at).toLocaleString()}`;
-    const actions = card("div", "editor-actions"); const register = card("button", "button button-outline"); register.textContent = "Register"; register.addEventListener("click", async () => { try { if (!state.token) return openAuth(); const result = await request(`/contests/${contest.id}/register`, { method: "POST" }); register.textContent = result.status === "already_registered" ? "Registered" : "Registered ✓"; } catch (e) { alert(e.message); } });
-    const leaderboard = card("button", "button"); leaderboard.textContent = "Leaderboard"; leaderboard.addEventListener("click", () => loadLeaderboard(contest)); actions.append(register, leaderboard); item.append(title, description, date, actions); list.append(item);
-  });
-}
-async function loadContests() { try { renderContests(await request("/contests")); } catch (error) { byId("contest-list").textContent = error.message; } }
-async function loadLeaderboard(contest) {
-  try { const entries = await request(`/contests/${contest.id}/leaderboard`); byId("leaderboard-title").textContent = `${contest.title} leaderboard`;
-    const content = byId("leaderboard-content"); const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>#</th><th>Participant</th><th>Score</th><th>Solved</th><th>Penalty</th></tr></thead>";
-    const body = document.createElement("tbody"); entries.forEach((entry) => { const row = document.createElement("tr"); [entry.rank, entry.username, entry.score, entry.solved, `${entry.penalty_seconds}s`].forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.append(cell); }); body.append(row); }); table.append(body); content.replaceChildren(table); byId("leaderboard-card").classList.remove("hidden");
-  } catch (error) { alert(error.message); }
-}
-async function submitSolution() {
-  if (!state.token) return openAuth(); if (!state.selectedProblem) return;
-  const source_code = byId("source-code").value; if (!source_code.trim()) return;
-  const button = byId("submit-button"); button.disabled = true; setStatus("QUEUED");
-  try { const submission = await request("/submissions", { method: "POST", body: JSON.stringify({ problem_id: state.selectedProblem.id, language: byId("language").value, source_code }) }); await pollSubmission(submission.id); }
-  catch (error) { setStatus("SYSTEM_ERROR"); alert(error.message); button.disabled = false; }
-}
-async function pollSubmission(id) {
-  try { const submission = await request(`/submissions/${id}`); setStatus(submission.status);
-    if (["QUEUED", "RUNNING"].includes(submission.status)) return setTimeout(() => pollSubmission(id), 1200);
-    if (submission.error_message) alert(submission.error_message);
-    await loadProfile();
-  } catch (error) { setStatus("SYSTEM_ERROR"); } finally { if (!["QUEUED", "RUNNING"].includes(byId("submission-state").textContent.replaceAll(" ", "_"))) byId("submit-button").disabled = false; }
-}
-
-async function loadProfile() {
-  const panel = byId("profile-card"); const history = byId("submission-history");
-  if (!state.token) { panel.innerHTML = '<p class="muted">Sign in to see your profile, statistics, and recent submissions.</p>'; history.replaceChildren(); return; }
-  try {
-    const [user, stats, submissions] = await Promise.all([request("/users/me"), request("/users/me/stats"), request("/users/me/submissions?limit=10")]);
-    panel.innerHTML = `<h3>${escapeHtml(user.username)}</h3><p class="muted">${escapeHtml(user.email)} · ${escapeHtml(user.role)}</p><div class="stats"><div><strong>${stats.solved_problems}</strong><span>Solved</span></div><div><strong>${stats.accepted_submissions}</strong><span>Accepted</span></div><div><strong>${stats.total_submissions}</strong><span>Submissions</span></div></div>`;
-    const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>ID</th><th>Problem</th><th>Language</th><th>Status</th><th>Time</th></tr></thead>"; const body = document.createElement("tbody");
-    submissions.forEach((s) => { const row = document.createElement("tr"); [s.id, s.problem_id, s.language, s.status.replaceAll("_", " "), s.execution_time_ms ? `${s.execution_time_ms} ms` : "—"].forEach((v) => { const cell = document.createElement("td"); cell.textContent = v; row.append(cell); }); body.append(row); }); table.append(body); history.replaceChildren(table);
-  } catch (error) { panel.textContent = error.message; }
-}
-function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
-function openAuth() { byId("auth-error").textContent = ""; byId("auth-dialog").showModal(); }
-function refreshAuth() { byId("auth-button").textContent = state.token ? "Sign out" : "Sign in"; loadProfile(); }
-async function submitAuth(event) {
-  event.preventDefault(); const payload = { email: byId("auth-email").value, password: byId("auth-password").value }; if (state.isRegistering) payload.username = byId("auth-username").value;
-  try { const result = await request(`/auth/${state.isRegistering ? "register" : "login"}`, { method: "POST", body: JSON.stringify(payload) }); state.token = result.access_token; localStorage.setItem("codearena_token", state.token); byId("auth-dialog").close(); refreshAuth(); }
-  catch (error) { byId("auth-error").textContent = error.message; }
-}
-byId("problem-search").addEventListener("input", (event) => renderProblems(state.problems.filter((p) => p.title.toLowerCase().includes(event.target.value.toLowerCase()))));
-byId("language").addEventListener("change", () => state.selectedProblem && selectProblem(state.selectedProblem)); byId("submit-button").addEventListener("click", submitSolution);
-byId("auth-button").addEventListener("click", () => { if (state.token) { localStorage.removeItem("codearena_token"); state.token = null; refreshAuth(); } else openAuth(); });
-byId("close-auth").addEventListener("click", () => byId("auth-dialog").close()); byId("auth-form").addEventListener("submit", submitAuth);
-byId("toggle-auth").addEventListener("click", () => { state.isRegistering = !state.isRegistering; byId("auth-title").textContent = state.isRegistering ? "Create your account" : "Sign in"; byId("auth-submit").textContent = state.isRegistering ? "Create account" : "Sign in"; byId("toggle-auth").textContent = state.isRegistering ? "Already registered? Sign in" : "Need an account? Register"; byId("username-field").style.display = state.isRegistering ? "flex" : "none"; });
-byId("close-leaderboard").addEventListener("click", () => byId("leaderboard-card").classList.add("hidden")); refreshAuth(); loadProblems(); loadContests();
+const API="/api/v1";
+const state={token:localStorage.getItem("codearena_token"),problems:[],selectedProblem:null,isRegistering:false,difficulty:"all"};
+const byId=id=>document.getElementById(id);
+const request=async(path,options={})=>{const headers={"Content-Type":"application/json",...(options.headers||{})};if(state.token)headers.Authorization=`Bearer ${state.token}`;const response=await fetch(`${API}${path}`,{...options,headers});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.detail||"Request failed");return body;};
+const card=(tag,cls)=>{const e=document.createElement(tag);e.className=cls;return e;};
+function toast(message,good=true){const t=byId("toast"),m=byId("toast-message"),i=byId("toast-icon");if(!t||!m)return;m.textContent=message;i.textContent=good?"✓":"!";t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove("show"),2600);}
+function setStatus(value){const tag=byId("submission-state");tag.textContent=value.replaceAll("_"," ");tag.className=`status-pill ${value==="ACCEPTED"?"accepted":/ERROR|WRONG|TIME|MEMORY/.test(value)?"error":""}`;const q=byId("queue-label");if(q)q.textContent=value.replaceAll("_"," ");}
+function renderProblems(items){const list=byId("problem-list");list.replaceChildren();if(!items.length){const empty=card("div","empty-state");empty.innerHTML='<div class="empty-icon">⌕</div><h3>No matching problems</h3><p>Try another search or difficulty filter.</p>';list.append(empty);return;}items.forEach(p=>{const item=card("article","problem-card"),d=card("span",`difficulty ${p.difficulty.toLowerCase()}`),title=document.createElement("h3"),meta=card("p","card-meta");d.textContent=p.difficulty;title.textContent=p.title;meta.textContent=`${p.time_limit_ms} ms · ${p.memory_limit_mb} MB`;item.append(d,title,meta);item.onclick=()=>selectProblem(p);list.append(item);});}
+function applyProblemFilters(){const q=(byId("problem-search").value||"").toLowerCase();renderProblems(state.problems.filter(p=>p.title.toLowerCase().includes(q)&&(state.difficulty==="all"||p.difficulty.toLowerCase()===state.difficulty)));}
+function selectProblem(p){state.selectedProblem=p;byId("workspace-title").textContent=p.title;byId("problem-panel-title").textContent=p.title;const d=byId("problem-difficulty");d.textContent=p.difficulty;d.className=`difficulty ${p.difficulty.toLowerCase()}`;byId("problem-description").textContent=p.description;byId("time-limit").textContent=`${p.time_limit_ms} ms`;byId("memory-limit").textContent=`${p.memory_limit_mb} MB`;byId("selected-problem-label").textContent=p.title;byId("submit-button").disabled=false;byId("source-code").value=byId("language").value==="cpp"?"#include <iostream>\nusing namespace std;\n\nint main() {\n  return 0;\n}":"# Write your solution\n";location.hash="workspace";}
+async function loadProblems(){try{state.problems=await request("/problems");byId("metric-problems").textContent=state.problems.length;applyProblemFilters();}catch(e){byId("problem-list").textContent=e.message;}}
+function renderContests(contests){const list=byId("contest-list");list.replaceChildren();byId("metric-contests").textContent=contests.length;if(!contests.length){const e=card("div","empty-state");e.innerHTML='<div class="empty-icon">♜</div><h3>No contests scheduled</h3><p>New competitions will appear here when they are published.</p>';list.append(e);return;}contests.forEach(c=>{const item=card("article","contest-card"),title=document.createElement("h3"),desc=card("p","muted"),date=card("p","card-meta"),actions=card("div","editor-actions"),reg=card("button","primary-button"),lb=card("button","ghost-button");title.textContent=c.title;desc.textContent=c.description||"Timed programming contest";date.textContent=`${new Date(c.starts_at).toLocaleString()} → ${new Date(c.ends_at).toLocaleString()}`;reg.textContent="Register";lb.textContent="Leaderboard";reg.onclick=async()=>{try{if(!state.token)return openAuth();const r=await request(`/contests/${c.id}/register`,{method:"POST"});reg.textContent="Registered ✓";toast(r.status==="already_registered"?"Already registered":"You are registered");}catch(e){toast(e.message,false);}};lb.onclick=()=>loadLeaderboard(c);actions.append(reg,lb);item.append(title,desc,date,actions);list.append(item);});}
+async function loadContests(){try{renderContests(await request("/contests"));}catch(e){byId("contest-list").textContent=e.message;}}
+async function loadLeaderboard(c){try{const entries=await request(`/contests/${c.id}/leaderboard`),content=byId("leaderboard-content"),table=document.createElement("table");byId("leaderboard-title").textContent=`${c.title} leaderboard`;table.innerHTML="<thead><tr><th>#</th><th>Participant</th><th>Score</th><th>Solved</th><th>Penalty</th></tr></thead>";const body=document.createElement("tbody");entries.forEach(e=>{const row=document.createElement("tr");[e.rank,e.username,e.score,e.solved,`${e.penalty_seconds}s`].forEach(v=>{const cell=document.createElement("td");cell.textContent=v;row.append(cell);});body.append(row);});table.append(body);content.replaceChildren(table);byId("leaderboard-card").classList.remove("hidden");}catch(e){toast(e.message,false);}}
+async function submitSolution(){if(!state.token)return openAuth();if(!state.selectedProblem)return toast("Select a problem first",false);const source_code=byId("source-code").value;if(!source_code.trim())return toast("Write a solution first",false);byId("submit-button").disabled=true;setStatus("QUEUED");toast("Submission queued");try{const s=await request("/submissions",{method:"POST",body:JSON.stringify({problem_id:state.selectedProblem.id,language:byId("language").value,source_code})});await pollSubmission(s.id);}catch(e){setStatus("SYSTEM_ERROR");toast(e.message,false);byId("submit-button").disabled=false;}}
+async function pollSubmission(id){try{const s=await request(`/submissions/${id}`);setStatus(s.status);if(["QUEUED","RUNNING"].includes(s.status))return setTimeout(()=>pollSubmission(id),1200);if(s.status==="ACCEPTED")toast("Accepted — all test cases passed");else if(s.error_message)toast(s.error_message,false);await loadProfile();}catch(e){setStatus("SYSTEM_ERROR");toast("Unable to fetch submission status",false);}finally{const status=byId("submission-state").textContent.replaceAll(" ","_");if(!["QUEUED","RUNNING"].includes(status))byId("submit-button").disabled=false;}}
+async function loadProfile(){const panel=byId("profile-card"),history=byId("submission-history");if(!state.token){panel.innerHTML='<div class="profile-placeholder"><div class="avatar large">CA</div><div><h3>Welcome to CodeArena</h3><p class="muted">Sign in to see your profile, statistics, and recent submissions.</p></div><a class="ghost-button" href="#" id="profile-signin">Sign in</a></div>';byId("profile-signin").onclick=e=>{e.preventDefault();openAuth();};history.replaceChildren();return;}try{const [u,st,subs]=await Promise.all([request("/users/me"),request("/users/me/stats"),request("/users/me/submissions?limit=10")]);panel.innerHTML=`<div class="profile-placeholder"><div class="avatar large">${escapeHtml(u.username.slice(0,2).toUpperCase())}</div><div><h3>${escapeHtml(u.username)}</h3><p class="muted">${escapeHtml(u.email)} · ${escapeHtml(u.role)}</p></div></div><div class="stats"><div><strong>${st.solved_problems}</strong><span>Solved problems</span></div><div><strong>${st.accepted_submissions}</strong><span>Accepted</span></div><div><strong>${st.total_submissions}</strong><span>Total submissions</span></div></div>`;byId("metric-solved").textContent=st.solved_problems;byId("metric-accepted").textContent=st.accepted_submissions;byId("weekly-progress").textContent=`${Math.min(st.solved_problems,5)} / 5`;byId("weekly-bar").style.width=`${Math.min(st.solved_problems,5)*20}%`;const table=document.createElement("table");table.innerHTML="<thead><tr><th>ID</th><th>Problem</th><th>Language</th><th>Status</th><th>Time</th></tr></thead>";const body=document.createElement("tbody");subs.forEach(s=>{const row=document.createElement("tr");[s.id,s.problem_id,s.language,s.status.replaceAll("_"," "),s.execution_time_ms?`${s.execution_time_ms} ms`:"—"].forEach(v=>{const cell=document.createElement("td");cell.textContent=v;row.append(cell);});body.append(row);});table.append(body);history.replaceChildren(table);}catch(e){panel.textContent=e.message;}}
+function escapeHtml(v){const d=document.createElement("div");d.textContent=v;return d.innerHTML}function openAuth(){byId("auth-error").textContent="";byId("auth-dialog").showModal()}function refreshAuth(){byId("auth-button").querySelector(".auth-label").textContent=state.token?"Account":"Sign in";loadProfile()}
+async function submitAuth(e){e.preventDefault();const p={email:byId("auth-email").value,password:byId("auth-password").value};if(state.isRegistering)p.username=byId("auth-username").value;try{const r=await request(`/auth/${state.isRegistering?"register":"login"}`,{method:"POST",body:JSON.stringify(p)});state.token=r.access_token;localStorage.setItem("codearena_token",state.token);byId("auth-dialog").close();refreshAuth();toast(state.isRegistering?"Account created":"Welcome back")}catch(err){byId("auth-error").textContent=err.message}}
+byId("problem-search").oninput=applyProblemFilters;document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.difficulty=b.dataset.filter;applyProblemFilters()});byId("language").onchange=()=>state.selectedProblem&&selectProblem(state.selectedProblem);byId("submit-button").onclick=submitSolution;byId("source-code").onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")submitSolution()};byId("auth-button").onclick=()=>{if(state.token){localStorage.removeItem("codearena_token");state.token=null;refreshAuth();toast("Signed out")}else openAuth()};byId("mobile-menu")?.addEventListener("click",()=>byId("sidebar").classList.toggle("open"));document.querySelectorAll(".nav-item").forEach(a=>a.onclick=()=>{document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));a.classList.add("active");byId("crumb-current").textContent=a.textContent.trim();byId("sidebar")?.classList.remove("open")});byId("close-auth").onclick=()=>byId("auth-dialog").close();byId("auth-form").onsubmit=submitAuth;byId("toggle-auth").onclick=()=>{state.isRegistering=!state.isRegistering;byId("auth-title").textContent=state.isRegistering?"Create your CodeArena account":"Sign in to CodeArena";byId("auth-submit").textContent=state.isRegistering?"Create account":"Sign in";byId("toggle-auth").textContent=state.isRegistering?"Already registered? Sign in":"Need an account? Register";byId("username-field").style.display=state.isRegistering?"flex":"none"};byId("close-leaderboard").onclick=()=>byId("leaderboard-card").classList.add("hidden");refreshAuth();loadProblems();loadContests();
