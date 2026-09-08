@@ -1,57 +1,68 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CodeArena online judge platform" />
-    <title>CodeArena</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <a class="brand" href="#top">Code<span>Arena</span></a>
-      <nav><a href="#problems">Problems</a><a href="#contests">Contests</a><a href="#workspace">Workspace</a></nav>
-      <button id="auth-button" class="button button-outline">Sign in</button>
-    </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CodeArena secure asynchronous online judge" />
+  <title>CodeArena — Online Judge</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#top">Code<span>Arena</span></a>
+  <nav><a href="#problems">Problems</a><a href="#contests">Contests</a><a href="#profile">Profile</a><a href="#workspace">Workspace</a></nav>
+  <button id="auth-button" class="button button-outline">Sign in</button>
+</header>
+<main id="top">
+  <section class="hero">
+    <p class="eyebrow">BUILD • RUN • IMPROVE</p>
+    <h1>Practice like an engineer.</h1>
+    <p>Write solutions, submit them to an asynchronous judge, and compete in timed contests.</p>
+    <a class="button" href="#problems">Explore problems</a>
+  </section>
 
-    <main id="top">
-      <section class="hero">
-        <p class="eyebrow">BUILD • RUN • IMPROVE</p>
-        <h1>Practice like an engineer.</h1>
-        <p>CodeArena is a secure online judge for writing, submitting, and evaluating programming solutions.</p>
-        <a class="button" href="#problems">Explore problems</a>
-      </section>
+  <section id="problems" class="section">
+    <div class="section-heading"><div><p class="eyebrow">PROBLEM SET</p><h2>Choose a challenge</h2></div><label class="search"><span>⌕</span><input id="problem-search" placeholder="Search problems" /></label></div>
+    <div id="problem-list" class="problem-grid"><p class="muted">Loading problems…</p></div>
+  </section>
 
-      <section id="problems" class="section">
-        <div class="section-heading"><div><p class="eyebrow">PROBLEM SET</p><h2>Choose a challenge</h2></div><label class="search"><span>⌕</span><input id="problem-search" placeholder="Search problems" /></label></div>
-        <div id="problem-list" class="problem-grid"><p class="muted">Loading problems…</p></div>
-      </section>
+  <section id="workspace" class="section workspace-section">
+    <div class="section-heading"><div><p class="eyebrow">WORKSPACE</p><h2 id="workspace-title">Select a problem to begin</h2></div><span id="submission-state" class="status-pill">Idle</span></div>
+    <div class="workspace">
+      <article class="problem-panel">
+        <p id="problem-difficulty" class="difficulty">—</p>
+        <p id="problem-description" class="muted">Select a problem from the list to read its description and open the editor.</p>
+        <dl class="limits"><div><dt>Time limit</dt><dd id="time-limit">—</dd></div><div><dt>Memory limit</dt><dd id="memory-limit">—</dd></div></dl>
+      </article>
+      <article class="editor-panel">
+        <div class="editor-toolbar"><label>Language <select id="language"><option value="python">Python 3</option><option value="cpp">C++17</option></select></label><span>Execution is isolated from the API process.</span></div>
+        <textarea id="source-code" spellcheck="false" aria-label="Source code editor" placeholder="# Select a problem, then write your solution here"></textarea>
+        <div class="editor-actions"><span id="selected-problem-label" class="muted">No problem selected</span><button id="submit-button" class="button" disabled>Submit solution</button></div>
+      </article>
+    </div>
+  </section>
 
-      <section id="workspace" class="section workspace-section">
-        <div class="section-heading"><div><p class="eyebrow">WORKSPACE</p><h2 id="workspace-title">Select a problem to begin</h2></div><span id="submission-state" class="status-pill">Idle</span></div>
-        <div class="workspace">
-          <article class="problem-panel">
-            <p id="problem-difficulty" class="difficulty">—</p>
-            <p id="problem-description" class="muted">Select a problem from the list to read its description and open the editor.</p>
-            <dl class="limits"><div><dt>Time limit</dt><dd id="time-limit">—</dd></div><div><dt>Memory limit</dt><dd id="memory-limit">—</dd></div></dl>
-          </article>
-          <article class="editor-panel">
-            <div class="editor-toolbar"><label>Language <select id="language"><option value="python">Python 3</option><option value="cpp">C++17</option></select></label><span id="editor-hint">Your code is executed in an isolated container.</span></div>
-            <textarea id="source-code" spellcheck="false" aria-label="Source code editor" placeholder="# Select a problem, then write your solution here"></textarea>
-            <div class="editor-actions"><span id="selected-problem-label" class="muted">No problem selected</span><button id="submit-button" class="button" disabled>Submit solution</button></div>
-          </article>
-        </div>
-      </section>
+  <section id="profile" class="section">
+    <div class="section-heading"><div><p class="eyebrow">ACCOUNT</p><h2>Your profile</h2></div></div>
+    <div id="profile-card" class="profile-card"><p class="muted">Sign in to see your profile, statistics, and recent submissions.</p></div>
+    <div id="submission-history" class="history"></div>
+  </section>
 
-      <section id="contests" class="section">
-        <div class="section-heading"><div><p class="eyebrow">COMPETE</p><h2>Contests</h2></div></div>
-        <div id="contest-list" class="contest-grid"><p class="muted">Loading contests…</p></div>
-        <article id="leaderboard-card" class="leaderboard hidden"><div class="leaderboard-heading"><h3 id="leaderboard-title">Leaderboard</h3><button id="close-leaderboard" class="text-button">Close</button></div><div id="leaderboard-content"></div></article>
-      </section>
-    </main>
-
-    <dialog id="auth-dialog"><form id="auth-form" method="dialog"><button type="button" class="dialog-close" id="close-auth">×</button><p class="eyebrow">YOUR ACCOUNT</p><h2 id="auth-title">Sign in</h2><label>Email<input id="auth-email" type="email" required /></label><label id="username-field">Username<input id="auth-username" minlength="3" /></label><label>Password<input id="auth-password" type="password" minlength="8" required /></label><p id="auth-error" class="error" role="alert"></p><button class="button" id="auth-submit" value="default">Sign in</button><button type="button" id="toggle-auth" class="text-button">Need an account? Register</button></form></dialog>
-    <footer>CodeArena · Built with an asynchronous sandboxed execution pipeline</footer>
-    <script src="/app.js"></script>
-  </body>
+  <section id="contests" class="section">
+    <div class="section-heading"><div><p class="eyebrow">COMPETE</p><h2>Contests</h2></div></div>
+    <div id="contest-list" class="contest-grid"><p class="muted">Loading contests…</p></div>
+    <article id="leaderboard-card" class="leaderboard hidden"><div class="leaderboard-heading"><h3 id="leaderboard-title">Leaderboard</h3><button id="close-leaderboard" class="text-button">Close</button></div><div id="leaderboard-content"></div></article>
+  </section>
+</main>
+<dialog id="auth-dialog">
+  <form id="auth-form" method="dialog"><button type="button" class="dialog-close" id="close-auth">×</button><p class="eyebrow">YOUR ACCOUNT</p><h2 id="auth-title">Sign in</h2>
+    <label>Email<input id="auth-email" type="email" required /></label>
+    <label id="username-field" style="display:none">Username<input id="auth-username" minlength="3" /></label>
+    <label>Password<input id="auth-password" type="password" minlength="8" required /></label>
+    <p id="auth-error" class="error" role="alert"></p><button class="button" id="auth-submit" value="default">Sign in</button><button type="button" id="toggle-auth" class="text-button">Need an account? Register</button>
+  </form>
+</dialog>
+<footer>CodeArena · asynchronous queue · isolated Docker execution · JWT/RBAC · contests</footer>
+<script src="/app.js"></script>
+</body>
 </html>
