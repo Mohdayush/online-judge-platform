@@ -1,0 +1,7 @@
+# Production/demo reverse proxy.
+# Set DOMAIN to your public DNS name for automatic HTTPS.
+# For a temporary IP-only demo, replace {$DOMAIN} with :80.
+{$DOMAIN} {
+    encode gzip
+    reverse_proxy api:8000
+}
