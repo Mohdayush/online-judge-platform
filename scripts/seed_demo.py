@@ -1,5 +1,5 @@
 """Seed a small local dataset for demonstrating CodeArena."""
-from datetime import datetime, timedelta
+from getpass import getpass
 
 from sqlalchemy import select
 
@@ -14,7 +14,10 @@ def main() -> None:
     try:
         admin = db.scalar(select(User).where(User.username == "demo_admin"))
         if admin is None:
-            admin = User(email="demo-admin@example.com", username="demo_admin", password_hash=hash_password("DemoAdmin123!"), role=Role.ADMIN)
+            password = getpass("Choose a password for demo_admin: ")
+            if len(password) < 8:
+                raise SystemExit("Password must contain at least 8 characters")
+            admin = User(email="demo-admin@example.com", username="demo_admin", password_hash=hash_password(password), role=Role.ADMIN)
             db.add(admin)
             db.flush()
         problem = db.scalar(select(Problem).where(Problem.slug == "sum-two-numbers"))
@@ -31,8 +34,7 @@ def main() -> None:
                 TestCase(problem_id=problem.id, input_data="100 250\n", expected_output="350\n", is_hidden=True),
             ])
         db.commit()
-        print("Demo dataset ready. Demo admin: demo_admin / DemoAdmin123!")
-        print("Change or delete demo credentials before exposing the application publicly.")
+        print("Demo dataset ready. Sign in as demo_admin with the password you chose.")
     finally:
         db.close()
 
