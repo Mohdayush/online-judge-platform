@@ -14,6 +14,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   worker:
     build:
       context: .
@@ -27,12 +33,14 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
     # Development only: lets the worker launch execution containers.
     # Never expose this socket to an untrusted production workload.
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -40,6 +48,7 @@ services:
       retries: 10
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: codearena
       POSTGRES_USER: codearena
