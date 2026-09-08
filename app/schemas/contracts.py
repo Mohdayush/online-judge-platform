@@ -39,6 +39,11 @@ class ProblemCreate(BaseModel):
     slug: str = Field(min_length=3, max_length=200, pattern=r"^[a-z0-9-]+$")
     description: str = Field(min_length=10, max_length=50000)
     difficulty: str = Field(pattern=r"^(EASY|MEDIUM|HARD)$")
+    tags: str = Field(default="", max_length=500)
+    constraints: str = Field(default="", max_length=20000)
+    input_format: str = Field(default="", max_length=10000)
+    output_format: str = Field(default="", max_length=10000)
+    editorial: str = Field(default="", max_length=50000)
     time_limit_ms: int = Field(default=1000, ge=100, le=10000)
     memory_limit_mb: int = Field(default=128, ge=16, le=1024)
 
