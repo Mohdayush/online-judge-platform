@@ -3,66 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="CodeArena secure asynchronous online judge" />
+  <meta name="description" content="CodeArena — modern asynchronous online judge" />
   <title>CodeArena — Online Judge</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-<header class="topbar">
-  <a class="brand" href="#top">Code<span>Arena</span></a>
-  <nav><a href="#problems">Problems</a><a href="#contests">Contests</a><a href="#profile">Profile</a><a href="#workspace">Workspace</a></nav>
-  <button id="auth-button" class="button button-outline">Sign in</button>
-</header>
-<main id="top">
-  <section class="hero">
-    <p class="eyebrow">BUILD • RUN • IMPROVE</p>
-    <h1>Practice like an engineer.</h1>
-    <p>Write solutions, submit them to an asynchronous judge, and compete in timed contests.</p>
-    <a class="button" href="#problems">Explore problems</a>
-  </section>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#top"><span class="brand-mark">&lt;/&gt;</span><span>Code<span class="brand-accent">Arena</span></span></a>
+      <div class="sidebar-label">PLATFORM</div>
+      <nav class="side-nav" aria-label="Primary navigation">
+        <a href="#top" class="nav-item active"><span>⌂</span> Overview</a>
+        <a href="#problems" class="nav-item"><span>▤</span> Problems</a>
+        <a href="#contests" class="nav-item"><span>♜</span> Contests</a>
+        <a href="#profile" class="nav-item"><span>◉</span> Profile</a>
+        <a href="#workspace" class="nav-item"><span>⌘</span> Workspace</a>
+      </nav>
+      <div class="sidebar-label">YOUR PROGRESS</div>
+      <div class="mini-progress"><div class="progress-head"><span>Weekly goal</span><strong id="weekly-progress">0 / 5</strong></div><div class="progress-track"><i id="weekly-bar"></i></div><small>Keep solving to build momentum.</small></div>
+      <div class="sidebar-bottom"><div class="status-dot"></div><div><strong>Judge online</strong><small>API & worker connected</small></div></div>
+    </aside>
 
-  <section id="problems" class="section">
-    <div class="section-heading"><div><p class="eyebrow">PROBLEM SET</p><h2>Choose a challenge</h2></div><label class="search"><span>⌕</span><input id="problem-search" placeholder="Search problems" /></label></div>
-    <div id="problem-list" class="problem-grid"><p class="muted">Loading problems…</p></div>
-  </section>
+    <div class="page-wrap">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Open menu">☰</button>
+        <div class="breadcrumbs"><span>CodeArena</span><b>/</b><span id="crumb-current">Overview</span></div>
+        <div class="top-actions">
+          <button class="icon-button" title="Search">⌕</button>
+          <button id="auth-button" class="profile-button"><span class="avatar">CA</span><span class="auth-label">Sign in</span><span>⌄</span></button>
+        </div>
+      </header>
 
-  <section id="workspace" class="section workspace-section">
-    <div class="section-heading"><div><p class="eyebrow">WORKSPACE</p><h2 id="workspace-title">Select a problem to begin</h2></div><span id="submission-state" class="status-pill">Idle</span></div>
-    <div class="workspace">
-      <article class="problem-panel">
-        <p id="problem-difficulty" class="difficulty">—</p>
-        <p id="problem-description" class="muted">Select a problem from the list to read its description and open the editor.</p>
-        <dl class="limits"><div><dt>Time limit</dt><dd id="time-limit">—</dd></div><div><dt>Memory limit</dt><dd id="memory-limit">—</dd></div></dl>
-      </article>
-      <article class="editor-panel">
-        <div class="editor-toolbar"><label>Language <select id="language"><option value="python">Python 3</option><option value="cpp">C++17</option></select></label><span>Execution is isolated from the API process.</span></div>
-        <textarea id="source-code" spellcheck="false" aria-label="Source code editor" placeholder="# Select a problem, then write your solution here"></textarea>
-        <div class="editor-actions"><span id="selected-problem-label" class="muted">No problem selected</span><button id="submit-button" class="button" disabled>Submit solution</button></div>
-      </article>
+      <main id="top" class="content">
+        <section class="hero-dashboard">
+          <div class="hero-copy">
+            <div class="hero-badge"><span class="pulse"></span> ONLINE JUDGE · READY</div>
+            <h1>Build. <span>Submit.</span><br/>Get better.</h1>
+            <p>Practice real engineering skills with an asynchronous judge, isolated execution, and competitive programming workflows.</p>
+            <div class="hero-actions"><a class="primary-button" href="#problems">Explore problems <span>→</span></a><a class="ghost-button" href="#workspace">Open workspace</a></div>
+            <div class="hero-trust"><span>✓ Secure sandbox</span><span>✓ Python + C++</span><span>✓ Live verdicts</span></div>
+          </div>
+          <div class="hero-visual">
+            <div class="code-window">
+              <div class="window-bar"><div><i></i><i></i><i></i></div><span>solution.cpp</span><b>● judging</b></div>
+              <pre><span class="code-purple">#include</span> &lt;iostream&gt;
+<span class="code-purple">using namespace</span> std;
+
+<span class="code-blue">int</span> main() {
+  <span class="code-blue">int</span> n;
+  cin &gt;&gt; n;
+  cout &lt;&lt; n * n;
+  <span class="code-purple">return</span> 0;
+}</pre>
+              <div class="judge-result"><span class="result-icon">✓</span><div><strong>Accepted</strong><small>All test cases passed</small></div><em>42 ms</em></div>
+            </div>
+            <div class="floating-card float-one"><span>⚡</span><div><strong>42 ms</strong><small>Execution time</small></div></div>
+            <div class="floating-card float-two"><span>◈</span><div><strong>128 MB</strong><small>Memory limit</small></div></div>
+          </div>
+        </section>
+
+        <section class="metric-grid" aria-label="Platform metrics">
+          <div class="metric-card"><div class="metric-icon purple">▤</div><div><span>Problems</span><strong id="metric-problems">—</strong><small>available to solve</small></div></div>
+          <div class="metric-card"><div class="metric-icon blue">✓</div><div><span>Your solved</span><strong id="metric-solved">—</strong><small>keep the streak alive</small></div></div>
+          <div class="metric-card"><div class="metric-icon green">↗</div><div><span>Accepted</span><strong id="metric-accepted">—</strong><small>successful submissions</small></div></div>
+          <div class="metric-card"><div class="metric-icon orange">♜</div><div><span>Contests</span><strong id="metric-contests">—</strong><small>scheduled competitions</small></div></div>
+        </section>
+
+        <section id="problems" class="section-block">
+          <div class="section-heading"><div><div class="section-kicker">PRACTICE</div><h2>Problem library</h2><p>Pick a challenge and sharpen your problem-solving skills.</p></div><a href="#workspace" class="section-link">Workspace →</a></div>
+          <div class="toolbar">
+            <label class="search-box"><span>⌕</span><input id="problem-search" placeholder="Search by title..." /></label>
+            <div class="filter-group"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="easy">Easy</button><button class="filter" data-filter="medium">Medium</button><button class="filter" data-filter="hard">Hard</button></div>
+          </div>
+          <div id="problem-list" class="problem-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
+        </section>
+
+        <section id="workspace" class="section-block workspace-block">
+          <div class="section-heading"><div><div class="section-kicker">CODE LAB</div><h2 id="workspace-title">Select a problem to begin</h2><p>Write, submit, and watch the judge evaluate your solution.</p></div><span id="submission-state" class="status-pill">Idle</span></div>
+          <div class="workspace-shell">
+            <article class="problem-panel">
+              <div class="problem-panel-top"><span id="problem-difficulty" class="difficulty">—</span><span class="panel-chip">Problem</span></div>
+              <h3 id="problem-panel-title">No problem selected</h3>
+              <p id="problem-description" class="muted">Select a challenge from the problem library to load its statement here.</p>
+              <div class="example-box"><div><span>INPUT</span><code>—</code></div><div><span>OUTPUT</span><code>—</code></div></div>
+              <div class="limits"><div><span>Time limit</span><strong id="time-limit">—</strong></div><div><span>Memory</span><strong id="memory-limit">—</strong></div></div>
+            </article>
+            <article class="editor-panel">
+              <div class="editor-toolbar"><div class="language-wrap"><span class="language-dot"></span><label>Language<select id="language"><option value="python">Python 3</option><option value="cpp">C++17</option></select></label></div><span class="isolation">⌁ Isolated execution</span></div>
+              <div class="editor-label"><span>EDITOR</span><span>Ctrl + Enter to submit</span></div>
+              <textarea id="source-code" spellcheck="false" aria-label="Source code editor" placeholder="# Select a problem, then write your solution here"></textarea>
+              <div class="editor-actions"><span id="selected-problem-label" class="muted">No problem selected</span><button id="submit-button" class="primary-button" disabled>Submit solution <span>↗</span></button></div>
+              <div class="submission-strip"><div><span class="strip-dot"></span><span>Queue</span><strong id="queue-label">Ready</strong></div><span>Worker powered</span></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="profile" class="section-block">
+          <div class="section-heading"><div><div class="section-kicker">ACCOUNT</div><h2>Your profile</h2><p>Track your progress and recent submissions.</p></div></div>
+          <div id="profile-card" class="profile-card"><div class="profile-placeholder"><div class="avatar large">CA</div><div><h3>Welcome to CodeArena</h3><p class="muted">Sign in to see your profile, statistics, and recent submissions.</p></div><a class="ghost-button" href="#" id="profile-signin">Sign in</a></div></div>
+          <div id="submission-history" class="history"></div>
+        </section>
+
+        <section id="contests" class="section-block">
+          <div class="section-heading"><div><div class="section-kicker">COMPETE</div><h2>Upcoming contests</h2><p>Challenge yourself against the clock and climb the leaderboard.</p></div><span class="live-label"><span></span> Live-ready</span></div>
+          <div id="contest-list" class="contest-grid"><div class="empty-state"><div class="empty-icon">♜</div><h3>No contests scheduled</h3><p>New competitions will appear here when they are published.</p></div></div>
+          <article id="leaderboard-card" class="leaderboard hidden"><div class="leaderboard-heading"><div><div class="section-kicker">RANKINGS</div><h3 id="leaderboard-title">Leaderboard</h3></div><button id="close-leaderboard" class="text-button">Close</button></div><div id="leaderboard-content"></div></article>
+        </section>
+      </main>
+      <footer><div class="footer-brand">Code<span>Arena</span></div><span>Asynchronous judging · isolated execution · competitive programming</span><span>Built for engineers.</span></footer>
     </div>
-  </section>
+  </div>
 
-  <section id="profile" class="section">
-    <div class="section-heading"><div><p class="eyebrow">ACCOUNT</p><h2>Your profile</h2></div></div>
-    <div id="profile-card" class="profile-card"><p class="muted">Sign in to see your profile, statistics, and recent submissions.</p></div>
-    <div id="submission-history" class="history"></div>
-  </section>
+  <div id="toast" class="toast" role="status" aria-live="polite"><span id="toast-icon">✓</span><span id="toast-message"></span></div>
 
-  <section id="contests" class="section">
-    <div class="section-heading"><div><p class="eyebrow">COMPETE</p><h2>Contests</h2></div></div>
-    <div id="contest-list" class="contest-grid"><p class="muted">Loading contests…</p></div>
-    <article id="leaderboard-card" class="leaderboard hidden"><div class="leaderboard-heading"><h3 id="leaderboard-title">Leaderboard</h3><button id="close-leaderboard" class="text-button">Close</button></div><div id="leaderboard-content"></div></article>
-  </section>
-</main>
-<dialog id="auth-dialog">
-  <form id="auth-form" method="dialog"><button type="button" class="dialog-close" id="close-auth">×</button><p class="eyebrow">YOUR ACCOUNT</p><h2 id="auth-title">Sign in</h2>
-    <label>Email<input id="auth-email" type="email" required /></label>
-    <label id="username-field" style="display:none">Username<input id="auth-username" minlength="3" /></label>
-    <label>Password<input id="auth-password" type="password" minlength="8" required /></label>
-    <p id="auth-error" class="error" role="alert"></p><button class="button" id="auth-submit" value="default">Sign in</button><button type="button" id="toggle-auth" class="text-button">Need an account? Register</button>
-  </form>
-</dialog>
-<footer>CodeArena · asynchronous queue · isolated Docker execution · JWT/RBAC · contests</footer>
-<script src="/app.js"></script>
+  <dialog id="auth-dialog">
+    <form id="auth-form" method="dialog"><button type="button" class="dialog-close" id="close-auth">×</button><div class="auth-logo">&lt;/&gt;</div><div class="section-kicker">YOUR ACCOUNT</div><h2 id="auth-title">Sign in to CodeArena</h2><p class="muted">Continue your coding journey.</p>
+      <label>Email<input id="auth-email" type="email" placeholder="you@example.com" required /></label>
+      <label id="username-field" style="display:none">Username<input id="auth-username" minlength="3" placeholder="coder123" /></label>
+      <label>Password<input id="auth-password" type="password" minlength="8" placeholder="••••••••" required /></label>
+      <p id="auth-error" class="error" role="alert"></p><button class="primary-button" id="auth-submit" value="default">Sign in</button><button type="button" id="toggle-auth" class="text-button">Need an account? Register</button>
+    </form>
+  </dialog>
+  <script src="/app.js"></script>
 </body>
 </html>
