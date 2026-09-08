@@ -11,6 +11,10 @@ check:
 	node --check web/app.js
 	git diff --check
 
+docker-check:
+	docker build -t codearena-api .
+	docker build -t codearena-worker -f Dockerfile.worker .
+
 run:
 	uvicorn app.main:app --reload
 
@@ -27,4 +31,4 @@ seed:
 	python -m scripts.seed_demo
 
 admin:
-	python -m scripts.bootstrap_admin
+	python -m scripts.bootstrap_admin $(EMAIL) $(USERNAME)
