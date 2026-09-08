@@ -1,16 +1,17 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    username: str = Field(min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_]+$")
     password: str = Field(min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):
@@ -18,10 +19,25 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    username: str
+    role: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserStatsResponse(BaseModel):
+    total_submissions: int
+    accepted_submissions: int
+    solved_problems: int
+
+
 class ProblemCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
-    slug: str = Field(pattern=r"^[a-z0-9-]+$")
-    description: str = Field(min_length=10)
+    slug: str = Field(min_length=3, max_length=200, pattern=r"^[a-z0-9-]+$")
+    description: str = Field(min_length=10, max_length=50000)
     difficulty: str = Field(pattern=r"^(EASY|MEDIUM|HARD)$")
     time_limit_ms: int = Field(default=1000, ge=100, le=10000)
     memory_limit_mb: int = Field(default=128, ge=16, le=1024)
@@ -29,28 +45,27 @@ class ProblemCreate(BaseModel):
 
 class ProblemResponse(ProblemCreate):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubmissionCreate(BaseModel):
-    problem_id: int
-    contest_id: int | None = None
+    problem_id: int = Field(gt=0)
+    contest_id: int | None = Field(default=None, gt=0)
     language: str = Field(pattern=r"^(python|cpp)$")
     source_code: str = Field(min_length=1, max_length=50000)
 
 
 class TestCaseCreate(BaseModel):
-    input_data: str = Field(max_length=100000)
+    input_data: str = Field(default="", max_length=100000)
     expected_output: str = Field(max_length=100000)
     is_hidden: bool = True
 
 
 class TestCaseResponse(BaseModel):
     id: int
+    problem_id: int
     is_hidden: bool
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubmissionResponse(BaseModel):
@@ -62,12 +77,11 @@ class SubmissionResponse(BaseModel):
     memory_used_kb: int | None
     error_message: str | None
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ContestProblemCreate(BaseModel):
-    problem_id: int
+    problem_id: int = Field(gt=0)
     points: int = Field(default=100, ge=1, le=10000)
 
 
@@ -76,7 +90,7 @@ class ContestCreate(BaseModel):
     description: str = Field(default="", max_length=5000)
     starts_at: datetime
     ends_at: datetime
-    problems: list[ContestProblemCreate] = Field(min_length=1)
+    problems: list[ContestProblemCreate] = Field(min_length=1, max_length=100)
 
     @field_validator("ends_at")
     @classmethod
@@ -93,8 +107,7 @@ class ContestResponse(BaseModel):
     description: str
     starts_at: datetime
     ends_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LeaderboardEntry(BaseModel):
