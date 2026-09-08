@@ -3,9 +3,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.entities import Problem, Submission, User
-from app.schemas.contracts import LoginRequest, ProblemCreate, ProblemResponse, RegisterRequest, SubmissionCreate, SubmissionResponse, TokenResponse
+from app.models.entities import Problem, Submission, SubmissionStatus, TestCase, User
+from app.schemas.contracts import LoginRequest, ProblemCreate, ProblemResponse, RegisterRequest, SubmissionCreate, SubmissionResponse, TestCaseCreate, TestCaseResponse, TokenResponse
 from app.services.auth import admin_user, create_access_token, current_user, hash_password, verify_password
+from app.services.queue import SubmissionQueue
 
 router = APIRouter(prefix="/api/v1")
 
@@ -42,13 +43,28 @@ def create_problem(payload: ProblemCreate, db: Session = Depends(get_db), user: 
     return problem
 
 
+@router.post("/problems/{problem_id}/test-cases", response_model=TestCaseResponse, status_code=201)
+def create_test_case(problem_id: int, payload: TestCaseCreate, db: Session = Depends(get_db), _: User = Depends(admin_user)):
+    if not db.get(Problem, problem_id):
+        raise HTTPException(status_code=404, detail="Problem not found")
+    test_case = TestCase(problem_id=problem_id, **payload.model_dump())
+    db.add(test_case); db.commit(); db.refresh(test_case)
+    return test_case
+
+
 @router.post("/submissions", response_model=SubmissionResponse, status_code=202)
 def create_submission(payload: SubmissionCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
     if not db.get(Problem, payload.problem_id):
         raise HTTPException(status_code=404, detail="Problem not found")
     submission = Submission(**payload.model_dump(), user_id=user.id)
     db.add(submission); db.commit(); db.refresh(submission)
-    # The production queue publisher is intentionally a separate worker boundary.
+    try:
+        SubmissionQueue().enqueue(submission.id)
+    except RuntimeError:
+        submission.status = SubmissionStatus.SYSTEM_ERROR
+        submission.error_message = "Submission queue unavailable; retry submission"
+        db.commit()
+        raise HTTPException(status_code=503, detail="Submission queue is temporarily unavailable")
     return submission
 
 

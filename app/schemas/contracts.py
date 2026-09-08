@@ -39,6 +39,19 @@ class SubmissionCreate(BaseModel):
     source_code: str = Field(min_length=1, max_length=50000)
 
 
+class TestCaseCreate(BaseModel):
+    input_data: str = Field(max_length=100000)
+    expected_output: str = Field(max_length=100000)
+    is_hidden: bool = True
+
+
+class TestCaseResponse(BaseModel):
+    id: int
+    is_hidden: bool
+    class Config:
+        from_attributes = True
+
+
 class SubmissionResponse(BaseModel):
     id: int
     problem_id: int

@@ -1,0 +1,28 @@
+services:
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: sqlite:///./data/judge.db
+    depends_on: [redis]
+    volumes: [judge_data:/app/data]
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: sqlite:///./data/judge.db
+    depends_on: [redis]
+    volumes:
+      - judge_data:/app/data
+      # Development only. Production uses a dedicated, isolated execution host.
+      - /var/run/docker.sock:/var/run/docker.sock
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+volumes:
+  judge_data:

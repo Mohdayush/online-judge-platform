@@ -20,6 +20,7 @@ class SubmissionStatus(str, enum.Enum):
     COMPILATION_ERROR = "COMPILATION_ERROR"
     RUNTIME_ERROR = "RUNTIME_ERROR"
     TIME_LIMIT_EXCEEDED = "TIME_LIMIT_EXCEEDED"
+    SYSTEM_ERROR = "SYSTEM_ERROR"
 
 
 class User(Base):
@@ -56,3 +57,12 @@ class Submission(Base):
     memory_used_kb: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TestCase(Base):
+    __tablename__ = "test_cases"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
+    input_data: Mapped[str] = mapped_column(Text)
+    expected_output: Mapped[str] = mapped_column(Text)
+    is_hidden: Mapped[bool] = mapped_column(default=True)
