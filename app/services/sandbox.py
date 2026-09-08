@@ -28,9 +28,9 @@ class DockerSandbox:
         return [
             "docker", "run", "--rm", "--init", "--network", "none", "--read-only",
             "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-            "--pids-limit", "64", "--cpus", "0.5", "--memory", f"{memory_limit_mb}m",
-            "--memory-swap", f"{memory_limit_mb}m", "--ulimit", "nofile=256:256", "--ulimit", "fsize=32768:32768",
-            "--tmpfs", "/work:rw,nosuid,nodev,noexec,size=32m", "--tmpfs", "/tmp:rw,nosuid,nodev,size=16m",
+            "--pids-limit", "64", "--cpus", "0.5", "--memory", f"{memory_limit_mb}m", "--memory-swap", f"{memory_limit_mb}m",
+            "--ulimit", "nofile=256:256", "--ulimit", "fsize=32768:32768",
+            "--tmpfs", "/work:rw,nosuid,nodev,size=32m", "--tmpfs", "/tmp:rw,nosuid,nodev,size=16m",
             "-v", f"{source_directory}:/source:ro", config["image"], "sh", "-c",
             f"cp /source/{config['filename']} /work/{config['filename']} && {config['command']}",
         ]
