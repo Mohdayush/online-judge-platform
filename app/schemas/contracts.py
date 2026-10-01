@@ -56,7 +56,7 @@ class ProblemResponse(ProblemCreate):
 class SubmissionCreate(BaseModel):
     problem_id: int = Field(gt=0)
     contest_id: int | None = Field(default=None, gt=0)
-    language: str = Field(pattern=r"^(python|cpp)$")
+    language: str = Field(pattern=r"^cpp$")
     source_code: str = Field(min_length=1, max_length=50000)
 
 
