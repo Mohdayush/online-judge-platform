@@ -17,7 +17,6 @@ class ExecutionResult:
 
 class DockerSandbox:
     LANGUAGE_CONFIG = {
-        "python": {"image": "python:3.12-alpine", "filename": "main.py", "command": "python /work/main.py"},
         "cpp": {"image": "gcc:14", "filename": "main.cpp", "command": "g++ -O2 /work/main.cpp -o /work/main && /work/main"},
     }
 
@@ -55,9 +54,12 @@ class DockerSandbox:
             elapsed = int((time.perf_counter() - started) * 1000)
             stdout, stderr = process.stdout[-100000:], process.stderr[-4000:]
             if process.returncode != 0:
-                if language == "cpp" and ("error:" in stderr or "fatal error:" in stderr or "compilation terminated" in stderr): verdict = "COMPILATION_ERROR"
-                elif process.returncode in (-9, 137): verdict = "MEMORY_LIMIT_EXCEEDED"
-                else: verdict = "RUNTIME_ERROR"
+                if "error:" in stderr or "fatal error:" in stderr or "compilation terminated" in stderr:
+                    verdict = "COMPILATION_ERROR"
+                elif process.returncode in (-9, 137):
+                    verdict = "MEMORY_LIMIT_EXCEEDED"
+                else:
+                    verdict = "RUNTIME_ERROR"
                 return ExecutionResult(verdict=verdict, stdout=stdout, stderr=stderr, execution_time_ms=elapsed)
             return ExecutionResult(verdict="OK", stdout=stdout, stderr=stderr, execution_time_ms=elapsed)
 
